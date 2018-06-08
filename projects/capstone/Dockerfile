@@ -1,4 +1,3 @@
-#!/bin/bash -eu
 # Copyright 2018 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,27 +14,10 @@
 #
 ################################################################################
 
-# limit allocation size to reduce spurious OOMs
-CFLAGS+=" -DWEBP_MAX_IMAGE_SIZE=838860800"  # 800MiB
-
-./autogen.sh
-./configure \
-  --enable-libwebpdemux \
-  --disable-shared \
-  --disable-jpeg \
-  --disable-tiff \
-  --disable-gif \
-  --disable-wic
-make clean
-make -j$(nproc)
-
-cp $SRC/fuzz.dict $OUT
-
-# Simple Decoding API
-$CXX $CXXFLAGS -std=c++11 \
-  -Isrc \
-  -lFuzzingEngine \
-  $SRC/fuzz_simple_api.cc -o $OUT/fuzz_simple_api \
-  src/.libs/libwebp.a
-cp $SRC/fuzz_seed_corpus.zip $OUT/fuzz_simple_api_seed_corpus.zip
-cp $SRC/fuzz_simple_api.options $OUT
+FROM gcr.io/oss-fuzz-base/base-builder
+MAINTAINER capstone.engine@gmail.com
+RUN apt-get update && apt-get install -y make cmake tshark
+RUN git clone --depth 1 --branch master https://github.com/aquynh/capstone.git capstonemaster
+#TODO next branch
+WORKDIR $SRC
+COPY build.sh $SRC/

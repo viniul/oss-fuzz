@@ -1,4 +1,3 @@
-#!/bin/bash -eu
 # Copyright 2018 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,27 +14,11 @@
 #
 ################################################################################
 
-# limit allocation size to reduce spurious OOMs
-CFLAGS+=" -DWEBP_MAX_IMAGE_SIZE=838860800"  # 800MiB
+FROM gcr.io/oss-fuzz-base/base-builder
+MAINTAINER mmoroz@chromium.org
+RUN apt-get update && apt-get install -y make autoconf automake libtool
+ADD https://raw.githubusercontent.com/llvm-mirror/compiler-rt/master/test/fuzzer/MultipleConstraintsOnSmallInputTest.cpp \
+    $SRC/fuzzing-puzzles/
+WORKDIR fuzzing-puzzles
+COPY build.sh $SRC/
 
-./autogen.sh
-./configure \
-  --enable-libwebpdemux \
-  --disable-shared \
-  --disable-jpeg \
-  --disable-tiff \
-  --disable-gif \
-  --disable-wic
-make clean
-make -j$(nproc)
-
-cp $SRC/fuzz.dict $OUT
-
-# Simple Decoding API
-$CXX $CXXFLAGS -std=c++11 \
-  -Isrc \
-  -lFuzzingEngine \
-  $SRC/fuzz_simple_api.cc -o $OUT/fuzz_simple_api \
-  src/.libs/libwebp.a
-cp $SRC/fuzz_seed_corpus.zip $OUT/fuzz_simple_api_seed_corpus.zip
-cp $SRC/fuzz_simple_api.options $OUT

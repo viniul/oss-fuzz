@@ -15,27 +15,28 @@
 #
 ################################################################################
 
-# limit allocation size to reduce spurious OOMs
-CFLAGS+=" -DWEBP_MAX_IMAGE_SIZE=838860800"  # 800MiB
+#add next branch
+for branch in master
+do
+    cd capstone$branch
+    # build project
+    mkdir build
+    # does not seem to work in source directory
+    # + make.sh overwrites CFLAGS
+    cd build
+    cmake -DCAPSTONE_BUILD_SHARED=0 ..
+    make
 
-./autogen.sh
-./configure \
-  --enable-libwebpdemux \
-  --disable-shared \
-  --disable-jpeg \
-  --disable-tiff \
-  --disable-gif \
-  --disable-wic
-make clean
-make -j$(nproc)
+    cd ../suite/fuzz
+    # TODO corpus
 
-cp $SRC/fuzz.dict $OUT
+    # export other associated stuff
+    cp *.options $OUT/
 
-# Simple Decoding API
-$CXX $CXXFLAGS -std=c++11 \
-  -Isrc \
-  -lFuzzingEngine \
-  $SRC/fuzz_simple_api.cc -o $OUT/fuzz_simple_api \
-  src/.libs/libwebp.a
-cp $SRC/fuzz_seed_corpus.zip $OUT/fuzz_simple_api_seed_corpus.zip
-cp $SRC/fuzz_simple_api.options $OUT
+    # build fuzz target
+    $CC $CFLAGS -I../../include/ -c fuzz_disasm.c -o fuzz_disasm.o
+
+    $CXX $CXXFLAGS fuzz_disasm.o -o $OUT/fuzz_disasm$branch ../../build/libcapstone.a -lFuzzingEngine
+
+    cd ../../../
+done

@@ -15,27 +15,6 @@
 #
 ################################################################################
 
-# limit allocation size to reduce spurious OOMs
-CFLAGS+=" -DWEBP_MAX_IMAGE_SIZE=838860800"  # 800MiB
-
-./autogen.sh
-./configure \
-  --enable-libwebpdemux \
-  --disable-shared \
-  --disable-jpeg \
-  --disable-tiff \
-  --disable-gif \
-  --disable-wic
-make clean
-make -j$(nproc)
-
-cp $SRC/fuzz.dict $OUT
-
-# Simple Decoding API
-$CXX $CXXFLAGS -std=c++11 \
-  -Isrc \
-  -lFuzzingEngine \
-  $SRC/fuzz_simple_api.cc -o $OUT/fuzz_simple_api \
-  src/.libs/libwebp.a
-cp $SRC/fuzz_seed_corpus.zip $OUT/fuzz_simple_api_seed_corpus.zip
-cp $SRC/fuzz_simple_api.options $OUT
+$CXX $CXXFLAGS $SRC/fuzzing-puzzles/MultipleConstraintsOnSmallInputTest.cpp \
+    -o $OUT/multiple_constraints_on_small_input_afl_fuzzer \
+    -lFuzzingEngine
