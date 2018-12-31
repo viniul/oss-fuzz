@@ -38,6 +38,11 @@ for FUZZER_BINARY in $(find $OUT/ -maxdepth 1 -executable -type f); do
     continue
   fi
 
+  # Continue if not a fuzz target.
+  if [[ $FUZZING_ENGINE != "none" ]]; then
+    grep "LLVMFuzzerTestOneInput" $FUZZER_BINARY > /dev/null 2>&1 || continue
+  fi
+
   FUZZER=$(basename $FUZZER_BINARY)
   if [[ "$FUZZER" == afl-* ]]; then
     continue
@@ -113,7 +118,7 @@ if [ "$BROKEN_TARGETS_PERCENTAGE" -gt "$ALLOWED_BROKEN_TARGETS_PERCENTAGE" ]; th
 
   # TODO: figure out how to not fail the "special" cases handled below. Those
   # are from "example" and "c-ares" projects and are too small targets to pass.
-  if [ "$(ls $OUT/do_stuff_fuzzer $OUT/ares_*_fuzzer 2>/dev/null | wc -l)" -gt "0" ]; then
+  if [ "$(ls $OUT/do_stuff_fuzzer $OUT/ares_*_fuzzer $OUT/checksum_fuzzer $OUT/xmltest 2>/dev/null | wc -l)" -gt "0" ]; then
     exit 0
   fi
 

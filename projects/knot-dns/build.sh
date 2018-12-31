@@ -39,7 +39,9 @@ if [[ $CFLAGS = *sanitize=memory* ]]; then
   NETTLE_CONFIGURE_FLAGS="--disable-assembler --disable-fat"
 fi
 
+
 cd $SRC/nettle
+git checkout tags/nettle_3.4.1_release_20181204
 bash .bootstrap
 ./configure --enable-mini-gmp --enable-static --disable-shared --disable-documentation --prefix=$DEPS_PATH $NETTLE_CONFIGURE_FLAGS
 ( make -j$(nproc) || make -j$(nproc) ) && make install
@@ -67,7 +69,7 @@ autoreconf -if
 make -j$(nproc)
 cd $SRC/knot-dns/tests-fuzz
 make check
-/bin/bash ../libtool   --mode=install /usr/bin/install -c fuzz_packet fuzz_zscanner "$OUT"
+/bin/bash ../libtool   --mode=install /usr/bin/install -c fuzz_packet fuzz_zscanner fuzz_dname_to_str fuzz_dname_from_str "$OUT"
 
 
 # Set up fuzzing seeds
