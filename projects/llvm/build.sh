@@ -16,25 +16,12 @@
 #
 ################################################################################
 
-build_protobuf() {
-  ./autogen.sh
-  ./configure --disable-shared
-  make -j $(nproc)
-  make check -j $(nproc)
-  make install
-  ldconfig
-}
-
-(cd protobuf-3.3.0 && build_protobuf)
-
 readonly FUZZERS=( \
   clang-fuzzer \
-  clang-proto-fuzzer \
-  clang-loop-proto-fuzzer \
-  clang-llvm-proto-fuzzer \
   clang-format-fuzzer \
   clangd-fuzzer \
-  llvm-demangle-fuzzer \
+  llvm-itanium-demangle-fuzzer \
+  llvm-microsoft-demangle-fuzzer \
   llvm-dwarfdump-fuzzer \
   llvm-isel-fuzzer \
   llvm-special-case-list-fuzzer \
@@ -49,15 +36,16 @@ esac
 
 mkdir build
 cd build
+# TODO: Stop using LIB_FUZZING_ENGINE_DEPRECATED and make this build use
+# LIB_FUZZING_ENGINE (see https://github.com/google/oss-fuzz/issues/2317).
 cmake -GNinja -DCMAKE_BUILD_TYPE=Release ../llvm \
     -DLLVM_ENABLE_ASSERTIONS=ON \
     -DCMAKE_C_COMPILER="${CC}" \
     -DCMAKE_CXX_COMPILER="${CXX}" \
     -DCMAKE_C_FLAGS="${CFLAGS}" \
     -DCMAKE_CXX_FLAGS="${CXXFLAGS}" \
-    -DLLVM_LIB_FUZZING_ENGINE="${LIB_FUZZING_ENGINE}" \
+    -DLLVM_LIB_FUZZING_ENGINE="${LIB_FUZZING_ENGINE_DEPRECATED}" \
     -DLLVM_NO_DEAD_STRIP=ON \
-    -DCLANG_ENABLE_PROTO_FUZZER=ON \
     -DLLVM_USE_SANITIZER="${LLVM_SANITIZER}" \
     -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly
 for fuzzer in "${FUZZERS[@]}"; do
@@ -137,3 +125,5 @@ build_corpus "llvm/test/Transforms/IndVarSimplify/" "llvm-opt-fuzzer--x86_64-llv
 build_corpus "llvm/test/Transforms/LoopStrengthReduce/" "llvm-opt-fuzzer--x86_64-llvm-opt-fuzzer--x86_64-strength_reduce"
 
 build_corpus "llvm/test/Transforms/IRCE/" "llvm-opt-fuzzer--x86_64-llvm-opt-fuzzer--x86_64-irce"
+
+zip -j "${OUT}/clangd-fuzzer_seed_corpus.zip"  llvm/tools/clang/tools/extra/test/clangd/*

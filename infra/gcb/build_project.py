@@ -20,7 +20,7 @@ from oauth2client.client import GoogleCredentials
 from oauth2client.service_account import ServiceAccountCredentials
 from googleapiclient.discovery import build
 
-BUILD_TIMEOUT = 10 * 60 * 60
+BUILD_TIMEOUT = 12 * 60 * 60
 
 FUZZING_BUILD_TAG = 'fuzzing'
 
@@ -28,11 +28,13 @@ GCB_LOGS_BUCKET = 'oss-fuzz-gcb-logs'
 
 CONFIGURATIONS = {
     'sanitizer-address': ['SANITIZER=address'],
+    'sanitizer-dataflow': ['SANITIZER=dataflow'],
     'sanitizer-memory': ['SANITIZER=memory'],
     'sanitizer-undefined': ['SANITIZER=undefined'],
     'engine-libfuzzer': ['FUZZING_ENGINE=libfuzzer'],
     'engine-afl': ['FUZZING_ENGINE=afl'],
     'engine-honggfuzz': ['FUZZING_ENGINE=honggfuzz'],
+    'engine-dataflow': ['FUZZING_ENGINE=dataflow'],
     'engine-none': ['FUZZING_ENGINE=none'],
 }
 
@@ -52,13 +54,17 @@ ENGINE_INFO = {
         EngineInfo(
             upload_bucket='clusterfuzz-builds-honggfuzz',
             supported_sanitizers=['address', 'memory', 'undefined']),
+    'dataflow':
+        EngineInfo(
+            upload_bucket='clusterfuzz-builds-dataflow',
+            supported_sanitizers=['dataflow']),
     'none':
         EngineInfo(
             upload_bucket='clusterfuzz-builds-no-engine',
             supported_sanitizers=['address']),
 }
 
-DEFAULT_ENGINES = ['libfuzzer', 'afl', 'honggfuzz']
+DEFAULT_ENGINES = ['libfuzzer', 'afl']
 DEFAULT_SANITIZERS = ['address', 'undefined']
 
 TARGETS_LIST_BASENAME = 'targets.list'
@@ -326,7 +332,7 @@ def get_build_steps(project_dir):
           },
       ])
 
-  return build_steps, image
+  return build_steps
 
 
 def get_logs_url(build_id):
@@ -345,7 +351,7 @@ def get_targets_list_url(bucket, project, sanitizer):
   return url
 
 
-def run_build(build_steps, image, tag):
+def run_build(build_steps, project_name, tag):
   options = {}
   if 'GCB_OPTIONS' in os.environ:
     options = yaml.safe_load(os.environ['GCB_OPTIONS'])
@@ -355,8 +361,9 @@ def run_build(build_steps, image, tag):
       'timeout': str(BUILD_TIMEOUT) + 's',
       'options': options,
       'logsBucket': GCB_LOGS_BUCKET,
-      'images': [ image ],
-      'tags': [ tag ],
+      'tags': [
+          project_name + '-' + tag,
+      ],
   }
 
   credentials = GoogleCredentials.get_application_default()
@@ -374,8 +381,10 @@ def main():
     usage()
 
   project_dir = sys.argv[1].rstrip(os.path.sep)
-  steps, image = get_build_steps(project_dir)
-  run_build(steps, image, FUZZING_BUILD_TAG)
+  steps = get_build_steps(project_dir)
+
+  project_name = os.path.basename(project_dir)
+  run_build(steps, project_name, FUZZING_BUILD_TAG)
 
 
 if __name__ == '__main__':
