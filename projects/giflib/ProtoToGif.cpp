@@ -89,8 +89,6 @@ void ProtoConverter::visit(ImageChunk const& chunk)
 
 void ProtoConverter::visit(const BasicChunk &chunk)
 {
-	// TODO: Convert graphic control extension
-	m_hasLCT = false;
 	// Visit GCExt if necessary
 	if (chunk.has_gcext())
 		visit(chunk.gcext());
@@ -121,6 +119,8 @@ void ProtoConverter::visit(ImageDescriptor const& descriptor)
 		m_hasLCT = true;
 		m_localColorExp = packedByte & 0x07;
 	}
+	else
+		m_hasLCT = false;
 }
 
 void ProtoConverter::visit(SubBlock const& block)
