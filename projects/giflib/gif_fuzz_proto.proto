@@ -67,7 +67,15 @@ message CommentExtension {
   repeated SubBlock subs = 1;
 }
 
-message Header {}
+message Header {
+  enum Version {
+    ENA = 1;
+    ESA = 2;
+    INV = 3;
+  }
+  required Version ver = 1;
+}
+
 message Trailer {}
 
 message ImageChunk {
@@ -82,6 +90,8 @@ message ImageChunk {
 message GifProto {
   required Header header = 1;
   required LogicalScreenDescriptor lsd = 2;
+  // Instead of making GCT optional here, we condition its visit on LSD's packed byte
+  // in the converter
   required GlobalColorTable gct = 3;
   repeated ImageChunk chunks = 4;
   required Trailer trailer = 5;
