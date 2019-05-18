@@ -35,7 +35,6 @@ LPM/src/libprotobuf-mutator.a \
 LPM/external.protobuf/lib/libprotobuf.a \
         -o $OUT/dgif_protobuf_target -fsanitize=fuzzer giflib-code/libgif.a
 
-
 # Place dict and config in OUT
 wget -O $OUT/gif.dict \
   https://raw.githubusercontent.com/mirrorer/afl/master/dictionaries/gif.dict \
