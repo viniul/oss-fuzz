@@ -23,15 +23,6 @@ export CXXFLAGS="$CXXFLAGS -fno-sanitize=vptr"
 export FFMPEG_DEPS_PATH=$SRC/ffmpeg_deps
 mkdir -p $FFMPEG_DEPS_PATH
 
-# Build latest nasm without memory instrumentation.
-cd $SRC
-tar xzf nasm-*
-cd nasm-*
-CFLAGS="" CXXFLAGS="" ./configure --prefix="$FFMPEG_DEPS_PATH"
-make clean
-make -j$(nproc)
-make install
-
 export PATH="$FFMPEG_DEPS_PATH/bin:$PATH"
 export LD_LIBRARY_PATH="$FFMPEG_DEPS_PATH/lib"
 
@@ -54,18 +45,10 @@ make install
 
 cd $SRC/fdk-aac
 autoreconf -fiv
-CXXFLAGS="$CXXFLAGS -fno-sanitize=shift-base" \
+CXXFLAGS="$CXXFLAGS -fno-sanitize=shift-base,signed-integer-overflow" \
 ./configure --prefix="$FFMPEG_DEPS_PATH" --disable-shared
 make clean
 make -j$(nproc) all
-make install
-
-cd $SRC
-tar xzf lame.tar.gz
-cd lame-*
-./configure --prefix="$FFMPEG_DEPS_PATH" --enable-static
-make clean
-make -j$(nproc)
 make install
 
 cd $SRC/libXext
@@ -138,23 +121,6 @@ make clean
 make -j$(nproc)
 make install
 
-cd $SRC/x264
-LDFLAGS="$CXXFLAGS" ./configure --prefix="$FFMPEG_DEPS_PATH" \
-    --enable-static
-make clean
-make -j$(nproc)
-make install
-
-cd $SRC/x265/build/linux
-cmake -G "Unix Makefiles" \
-    -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX \
-    -DCMAKE_C_FLAGS="$CFLAGS" -DCMAKE_CXX_FLAGS="$CXXFLAGS" \
-    -DCMAKE_INSTALL_PREFIX="$FFMPEG_DEPS_PATH" -DENABLE_SHARED:bool=off \
-    ../../source
-make clean
-make -j$(nproc) x265-static
-make install
-
 # Remove shared libraries to avoid accidental linking against them.
 rm $FFMPEG_DEPS_PATH/lib/*.so
 rm $FFMPEG_DEPS_PATH/lib/*.so.*
@@ -168,20 +134,20 @@ PKG_CONFIG_PATH="$FFMPEG_DEPS_PATH/lib/pkgconfig" ./configure \
     --prefix="$FFMPEG_DEPS_PATH" \
     --pkg-config-flags="--static" \
     --enable-ossfuzz \
-    --libfuzzer=-lFuzzingEngine \
+    --libfuzzer=$LIB_FUZZING_ENGINE \
     --optflags=-O1 \
     --enable-gpl \
     --enable-libass \
     --enable-libfdk-aac \
     --enable-libfreetype \
-    --enable-libmp3lame \
     --enable-libopus \
     --enable-libtheora \
     --enable-libvorbis \
     --enable-libvpx \
-    --enable-libx264 \
-    --enable-libx265 \
     --enable-nonfree \
+    --disable-muxers \
+    --disable-protocols \
+    --disable-devices \
     --disable-shared
 make clean
 make -j$(nproc) install
@@ -211,6 +177,12 @@ for c in $CONDITIONALS ; do
   make tools/target_dec_${symbol}_fuzzer
   mv tools/target_dec_${symbol}_fuzzer $OUT/${fuzzer_name}
 done
+
+# Build fuzzer for demuxer
+fuzzer_name=ffmpeg_DEMUXER_fuzzer
+echo -en "[libfuzzer]\nmax_len = 1000000\n" > $OUT/${fuzzer_name}.options
+make tools/target_dem_fuzzer
+mv tools/target_dem_fuzzer $OUT/${fuzzer_name}
 
 # Find relevant corpus in test samples and archive them for every fuzzer.
 #cd $SRC

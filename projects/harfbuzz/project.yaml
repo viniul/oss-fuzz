@@ -11,7 +11,14 @@ auto_ccs:
   - "jfkthame@gmail.com"
   - "cchapman@adobe.com"
   - "ariza@typekit.com"
+  - "qxliu@google.com"
+vendor_ccs:
+  - "cdiehl@mozilla.com"
+  - "twsmith@mozilla.com"
 sanitizers:
  - address
  - undefined
  - memory
+architectures:
+  - x86_64
+  - i386

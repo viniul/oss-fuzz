@@ -15,7 +15,7 @@
 #
 ################################################################################
 
-UNRAR_DEFINES="-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -DRAR_SMP -DRARDLL -DSILENT"
+UNRAR_DEFINES="-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -DRAR_SMP -DRARDLL -DSILENT -DNOVOLUME"
 UNRAR_WNOS="-Wno-logical-op-parentheses -Wno-switch -Wno-dangling-else"
 UNRAR_SRC_DIR="$SRC/unrar"
 
@@ -29,4 +29,4 @@ rm -v $UNRAR_SRC_DIR/libunrar.so
 
 # build fuzzer
 $CXX $CXXFLAGS -I. $UNRAR_SRC_DIR/unrar_fuzzer.cc -o $OUT/unrar_fuzzer \
-     $UNRAR_DEFINES -lFuzzingEngine -L$UNRAR_SRC_DIR -lunrar
+     $UNRAR_DEFINES $LIB_FUZZING_ENGINE -L$UNRAR_SRC_DIR -lunrar

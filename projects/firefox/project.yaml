@@ -1,7 +1,9 @@
 homepage: "https://www.mozilla.org/firefox/"
-primary_contact: "agaynor@mozilla.com"
+primary_contact: "choller@mozilla.com"
 auto_ccs:
-  - choller@mozilla.com
+  - twsmith@mozilla.com
+  - cdiehl@mozilla.com
+  - sledru@mozilla.com
 fuzzing_engines:
   - libfuzzer
 sanitizers:

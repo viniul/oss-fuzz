@@ -44,12 +44,13 @@ export SWIFTSHADER_LIB_PATH=$OUT
 popd
 # These are any clang warnings we need to silence.
 DISABLE="-Wno-zero-as-null-pointer-constant -Wno-unused-template
-         -Wno-cast-qual -Wno-self-assign -Wno-return-std-move-in-c++11
-         -Wno-extra-semi-stmt"
+         -Wno-cast-qual"
 # Disable UBSan vptr since target built with -fno-rtti.
+# TODO(metzman): Stop using gold when
+# bugs.chromium.org/p/oss-fuzz/issues/detail?id=16777 gets resolved.
 export CFLAGS="$CFLAGS $DISABLE -I$SWIFTSHADER_INCLUDE_PATH -DGR_EGL_TRY_GLES3_THEN_GLES2 -fno-sanitize=vptr"
 export CXXFLAGS="$CXXFLAGS $DISABLE -I$SWIFTSHADER_INCLUDE_PATH -DGR_EGL_TRY_GLES3_THEN_GLES2 -fno-sanitize=vptr "-DIS_FUZZING_WITH_LIBFUZZER""
-export LDFLAGS="-lFuzzingEngine $CXXFLAGS -L$SWIFTSHADER_LIB_PATH"
+export LDFLAGS="$LIB_FUZZING_ENGINE $CXXFLAGS -L$SWIFTSHADER_LIB_PATH -fuse-ld=gold"
 
 # This splits a space separated list into a quoted, comma separated list for gn.
 export CFLAGS_ARR=`echo $CFLAGS | sed -e "s/\s/\",\"/g"`
@@ -100,7 +101,8 @@ $SRC/depot_tools/ninja -C out/Fuzz region_deserialize region_set_path \
                                    jpeg_encoder webp_encoder skottie_json \
                                    textblob_deserialize skjson \
                                    api_null_canvas api_image_filter api_pathop \
-                                   api_polyutils android_codec image_decode_incremental
+                                   api_polyutils android_codec image_decode_incremental \
+                                   sksl2glsl sksl2spirv sksl2metal sksl2pipeline
 
 $SRC/depot_tools/ninja -C out/Fuzz_mem_constraints image_filter_deserialize \
                                                    api_raster_n32_canvas \
@@ -207,3 +209,19 @@ cp ./image_decode_seed_corpus.zip $OUT/android_codec_seed_corpus.zip.
 cp out/Fuzz/image_decode_incremental $OUT/image_decode_incremental
 cp ./image_decode_incremental.options $OUT/image_decode_incremental.options
 cp ./image_decode_seed_corpus.zip $OUT/image_decode_incremental_seed_corpus.zip
+
+cp out/Fuzz/sksl2glsl $OUT/sksl2glsl
+cp ./sksl2glsl.options $OUT/sksl2glsl.options
+cp ./sksl_seed_corpus.zip $OUT/sksl2glsl_seed_corpus.zip
+
+cp out/Fuzz/sksl2spirv $OUT/sksl2spirv
+cp ./sksl2spirv.options $OUT/sksl2spirv.options
+cp ./sksl_seed_corpus.zip $OUT/sksl2spirv_seed_corpus.zip
+
+cp out/Fuzz/sksl2metal $OUT/sksl2metal
+cp ./sksl2metal.options $OUT/sksl2metal.options
+cp ./sksl_seed_corpus.zip $OUT/sksl2metal_seed_corpus.zip
+
+cp out/Fuzz/sksl2pipeline $OUT/sksl2pipeline
+cp ./sksl2pipeline.options $OUT/sksl2pipeline.options
+cp ./sksl_seed_corpus.zip $OUT/sksl2pipeline_seed_corpus.zip

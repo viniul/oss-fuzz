@@ -44,6 +44,9 @@ LATEST_REPORT_INFO_URL = (
 # Link where to upload code coverage report files to.
 UPLOAD_URL_FORMAT = 'gs://' + COVERAGE_BUCKET_NAME + '/{project}/{type}/{date}'
 
+# TODO(#2817): Support code coverage for Go projects.
+GO_FUZZ_BUILD = 'go-fuzz-build -libfuzzer'
+
 
 def skip_build(message):
   """Exit with 0 code not to mark code coverage job as failed."""
@@ -65,6 +68,12 @@ def get_build_steps(project_dir):
   project_yaml = build_project.load_project_yaml(project_dir)
   if project_yaml['disabled']:
     skip_build('Project "%s" is disabled.' % project_name)
+
+  build_script_path = os.path.join(project_dir, 'build.sh')
+  with open(build_script_path) as fh:
+    if GO_FUZZ_BUILD in fh.read():
+      skip_build('Project "%s" uses go-fuzz, coverage is not supported yet.' %
+                 project_name)
 
   fuzz_targets = get_targets_list(project_name)
   if not fuzz_targets:
@@ -179,7 +188,7 @@ def get_build_steps(project_dir):
       {
           'name': 'gcr.io/cloud-builders/gsutil',
           'args': [
-              '-m', 'rsync', '-r', '-d',
+              '-m', 'cp', '-r',
               os.path.join(out, 'report'),
               upload_report_url,
           ],
@@ -193,7 +202,7 @@ def get_build_steps(project_dir):
       {
           'name': 'gcr.io/cloud-builders/gsutil',
           'args': [
-              '-m', 'rsync', '-r', '-d',
+              '-m', 'cp', '-r',
               os.path.join(out, 'fuzzer_stats'),
               upload_fuzzer_stats_url,
           ],
@@ -205,7 +214,7 @@ def get_build_steps(project_dir):
       {
           'name': 'gcr.io/cloud-builders/gsutil',
           'args': [
-              '-m', 'rsync', '-r', '-d',
+              '-m', 'cp', '-r',
               os.path.join(out, 'logs'),
               UPLOAD_URL_FORMAT.format(
                   project=project_name, type='logs', date=report_date),
@@ -255,7 +264,7 @@ def get_build_steps(project_dir):
           ],
       }
   )
-  return build_steps, image
+  return build_steps
 
 
 def get_targets_list(project_name):
@@ -280,8 +289,9 @@ def main():
     usage()
 
   project_dir = sys.argv[1].rstrip(os.path.sep)
-  steps, image = get_build_steps(project_dir)
-  build_project.run_build(steps, image, COVERAGE_BUILD_TAG)
+  project_name = os.path.basename(project_dir)
+  steps = get_build_steps(project_dir)
+  build_project.run_build(steps, project_name, COVERAGE_BUILD_TAG)
 
 
 if __name__ == "__main__":
