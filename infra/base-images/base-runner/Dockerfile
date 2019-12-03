@@ -14,17 +14,23 @@
 #
 ################################################################################
 
+# Using multi-stage build to copy some LLVM binaries needed in the runner image.
+FROM gcr.io/oss-fuzz-base/base-clang AS base-clang
+
 FROM gcr.io/oss-fuzz-base/base-image
-MAINTAINER mike.aizatsky@gmail.com
+
+# Copy the binaries needed for code coverage and crash symbolization.
+COPY --from=base-clang /usr/local/bin/llvm-cov /usr/local/bin/
+COPY --from=base-clang /usr/local/bin/llvm-profdata /usr/local/bin/
+COPY --from=base-clang /usr/local/bin/llvm-symbolizer /usr/local/bin/
+
 RUN apt-get install -y \
     binutils \
     file \
     fonts-dejavu \
     git \
-    libblocksruntime0 \
     libc6-dev-i386 \
     libcap2 \
-    libunwind8 \
     python3 \
     python3-pip \
     wget \
@@ -37,9 +43,6 @@ COPY bad_build_check \
     coverage \
     coverage_helper \
     download_corpus \
-    llvm-cov \
-    llvm-profdata \
-    llvm-symbolizer \
     minijail0 \
     reproduce \
     run_fuzzer \

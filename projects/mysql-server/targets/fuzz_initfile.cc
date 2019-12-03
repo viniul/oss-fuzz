@@ -24,6 +24,7 @@
 #include "mysql/psi/mysql_socket.h"
 #include "mysql/psi/mysql_file.h"
 #include "violite.h"
+#include "util_fuzz.h"
 #include <stdlib.h>
 #include <libgen.h>
 
@@ -69,13 +70,13 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
         /* first init was run with
          * mysqld --user=root --initialize-insecure --log-error-verbosity=5 --datadir=/out/mysql/data/ --basedir=/out/mysql/
          */
-        system("rm -Rf /tmp/mysql");
+        utilfuzz_rmrf("/tmp/mysql_initfile");
         char command[MAX_SIZE];
         char argbase[MAX_SIZE];
         char arginitfile[MAX_SIZE];
-        snprintf(command, MAX_SIZE-1, "cp -r %s/mysql/data /tmp/mysql", filepath);
-        //unsafe
-        system(command);
+
+        snprintf(command, MAX_SIZE-1, "%s/mysql/data", filepath);
+        utilfuzz_cpr(command, "/tmp/mysql_initfile");
 
         snprintf(argbase, MAX_SIZE-1, "--basedir=%s/mysql/", filepath);
         snprintf(arginitfile, MAX_SIZE-1, "--init-file=%s/initnopw.sql", filepath);
@@ -91,7 +92,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
             const_cast<char *>("--event-scheduler=DISABLED"),
             const_cast<char *>("--performance_schema=OFF"),
             const_cast<char *>("--thread_stack=1048576"),
-            const_cast<char *>("--datadir=/tmp/mysql/"),
+            const_cast<char *>("--datadir=/tmp/mysql_initfile/"),
             const_cast<char *>("--port=3302"),
             const_cast<char *>("--socket=/tmp/initfile.sock"),
             const_cast<char *>(argbase),

@@ -31,12 +31,30 @@ export CFLAGS="${CFLAGS} -Wl,-lunwind"
 
 cmake \
   -DOSQUERY_VERSION:string=0.0.0-fuzz \
-  -DOSQUERY_FUZZ:BOOL=ON \
-  -DOSQUERY_BUILD_TESTS:BOOL=ON \
+  -DOSQUERY_ENABLE_ADDRESS_SANITIZER:BOOL=ON \
+  -DOSQUERY_ENABLE_FUZZER_SANITIZERS:BOOL=ON \
   -DOSQUERY_TOOLCHAIN_SYSROOT=/usr/local/osquery-toolchain \
   ..
 cmake \
   -DCMAKE_EXE_LINKER_FLAGS=${LIB_FUZZING_ENGINE} \
   ..
+
+# Build harnesses
 cmake --build . -j$(nproc) --target osqueryfuzz-config
-cp osquery/main/osqueryfuzz-config "${OUT}/osqueryfuzz-config"
+cmake --build . -j$(nproc) --target osqueryfuzz-sqlquery
+
+# Cleanup
+find . -type f -name '*.o' -delete
+rm -rf "${SRC}/${PROJECT}/libraries/cmake/source/libudev/src/test"
+rm -rf libs/src/patched-source/libudev/src/test
+
+# Move harnesses to output path
+cp osquery/main/harnesses/osqueryfuzz-config "${OUT}/osqueryfuzz-config"
+cp osquery/main/harnesses/osqueryfuzz-sqlquery "${OUT}/osqueryfuzz-sqlquery"
+
+# Build supporting files
+popd
+tools/harnesses/osqueryfuzz_config_corpus.sh "${OUT}/osqueryfuzz-config_seed_corpus.zip"
+tools/harnesses/osqueryfuzz_config_dict.sh "${OUT}/osqueryfuzz-config.dict"
+tools/harnesses/osqueryfuzz_sqlquery_corpus.sh "${OUT}/osqueryfuzz-sqlquery_seed_corpus.zip"
+cp tools/harnesses/osqueryfuzz_sqlquery.dict "${OUT}/osqueryfuzz-sqlquery.dict"
